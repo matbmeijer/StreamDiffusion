@@ -1,10 +1,15 @@
+import os
 from dataclasses import dataclass, field
 from typing import List, Literal
 
 import torch
-import os
+
 
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", "False") == "True"
+
+
+def get_device():
+    return torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 
 
 @dataclass
@@ -34,11 +39,11 @@ class Config:
     # TinyVAE model
     vae_id: str = os.environ.get("VAE", "madebyollin/taesd")
     # Device to use
-    device: torch.device = torch.device("cuda")
+    device: torch.device = get_device()
     # Data type
     dtype: torch.dtype = torch.float16
     # acceleration
-    acceleration: Literal["none", "xformers", "tensorrt"] = "xformers"
+    acceleration: Literal["none", "xformers", "tensorrt"] = "none"
 
     ####################################################################
     # Inference configuration

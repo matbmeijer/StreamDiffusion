@@ -1,4 +1,3 @@
-import os
 import re
 
 from setuptools import find_packages, setup
@@ -7,7 +6,7 @@ from setuptools import find_packages, setup
 _deps = [
     "torch",
     "xformers",
-    "diffusers==0.24.0",
+    "diffusers==0.29.2",
     "transformers",
     "accelerate",
     "fire",
@@ -17,7 +16,7 @@ _deps = [
     "onnxruntime==1.16.3",
     "protobuf==3.20.2",
     "colored",
-    "pywin32;sys_platform == 'win32'"
+    "pywin32;sys_platform == 'win32'",
 ]
 
 deps = {b: a for a, b in (re.findall(r"^(([^!=<>~]+)(?:[!=<>~].*)?$)", x)[0] for x in _deps)}

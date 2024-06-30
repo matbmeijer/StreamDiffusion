@@ -1,15 +1,17 @@
 import os
 import sys
-from typing import Literal, Dict, Optional
+from typing import Dict, Literal, Optional
 
 import fire
 import torch
 from torchvision.io import read_video, write_video
 from tqdm import tqdm
 
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from utils.wrapper import StreamDiffusionWrapper
+
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,12 +23,11 @@ def main(
     lora_dict: Optional[Dict[str, float]] = None,
     prompt: str = "1girl with brown dog ears, thick frame glasses",
     scale: float = 1.0,
-    acceleration: Literal["none", "xformers", "tensorrt"] = "xformers",
+    acceleration: Literal["none", "xformers", "tensorrt"] = "none",
     use_denoising_batch: bool = True,
     enable_similar_image_filter: bool = True,
     seed: int = 2,
 ):
-
     """
     Process for generating images based on a prompt using a specified model.
 

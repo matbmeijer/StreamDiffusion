@@ -67,7 +67,7 @@ class BaseModel:
     def __init__(
         self,
         fp16=False,
-        device="cuda",
+        device="mps",
         verbose=True,
         max_batch_size=16,
         min_batch_size=1,
@@ -223,7 +223,7 @@ class UNet(BaseModel):
     def __init__(
         self,
         fp16=False,
-        device="cuda",
+        device="mps",
         max_batch_size=16,
         min_batch_size=1,
         embedding_dim=768,

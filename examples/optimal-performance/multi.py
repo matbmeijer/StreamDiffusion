@@ -3,7 +3,7 @@ import sys
 import threading
 import time
 import tkinter as tk
-from multiprocessing import Process, Queue, get_context
+from multiprocessing import Queue, get_context
 from typing import List, Literal
 
 import fire
@@ -48,7 +48,7 @@ def image_generation_process(
     prompt: str,
     model_id_or_path: str,
     batch_size: int = 10,
-    acceleration: Literal["none", "xformers", "tensorrt"] = "tensorrt",
+    acceleration: Literal["none", "xformers", "tensorrt"] = "none",
 ) -> None:
     """
     Process for generating images based on a prompt using a specified model.
@@ -84,12 +84,25 @@ def image_generation_process(
         prompt=prompt,
         num_inference_steps=50,
     )
-
+    start = 100
     while True:
         try:
             start_time = time.time()
 
-            x_outputs = stream.stream.txt2img_sd_turbo(batch_size).cpu()
+            start += 50
+            # None is the default action, fully random
+            noise = None
+
+            # This will generate seeds the change every iteration (but the video will be the same each time it is run)
+            # noise = list(range(start, start+batch_size))
+
+            # This will generate a constant image stream
+            # noise = [808] * batch_size
+
+            # You can uncomment this with either of the noise lists to generator and pre-process a noise tensor
+            # noise = stream.stream.noise_from_seeds(noise).neg()
+
+            x_outputs = stream.stream.txt2img_sd_turbo(batch_size, noise).cpu()
             queue.put(x_outputs, block=False)
 
             fps = 1 / (time.time() - start_time) * batch_size
@@ -99,9 +112,7 @@ def image_generation_process(
             return
 
 
-def _receive_images(
-    queue: Queue, fps_queue: Queue, labels: List[tk.Label], fps_label: tk.Label
-) -> None:
+def _receive_images(queue: Queue, fps_queue: Queue, labels: List[tk.Label], fps_label: tk.Label) -> None:
     """
     Continuously receive images from a queue and update the labels.
 
@@ -121,9 +132,7 @@ def _receive_images(
             if not queue.empty():
                 [
                     labels[0].after(0, update_image, image_data, labels)
-                    for image_data in postprocess_image(
-                        queue.get(block=False), output_type="pil"
-                    )
+                    for image_data in postprocess_image(queue.get(block=False), output_type="pil")
                 ]
             if not fps_queue.empty():
                 fps_label.config(text=f"FPS: {fps_queue.get(block=False):.2f}")
@@ -154,9 +163,7 @@ def receive_images(queue: Queue, fps_queue: Queue) -> None:
     fps_label = tk.Label(root, text="FPS: 0")
     fps_label.grid(rows=2, columnspan=2)
 
-    thread = threading.Thread(
-        target=_receive_images, args=(queue, fps_queue, labels, fps_label), daemon=True
-    )
+    thread = threading.Thread(target=_receive_images, args=(queue, fps_queue, labels, fps_label), daemon=True)
     thread.start()
 
     try:
@@ -168,13 +175,13 @@ def receive_images(queue: Queue, fps_queue: Queue) -> None:
 def main(
     prompt: str = "cat with sunglasses and a hat, photoreal, 8K",
     model_id_or_path: str = "stabilityai/sd-turbo",
-    batch_size: int = 12,
-    acceleration: Literal["none", "xformers", "tensorrt"] = "tensorrt",
+    batch_size: int = 8,
+    acceleration: Literal["none", "xformers", "tensorrt"] = "none",
 ) -> None:
     """
     Main function to start the image generation and viewer processes.
     """
-    ctx = get_context('spawn')
+    ctx = get_context("spawn")
     queue = ctx.Queue()
     fps_queue = ctx.Queue()
     process1 = ctx.Process(
@@ -188,6 +195,7 @@ def main(
 
     process1.join()
     process2.join()
+
 
 if __name__ == "__main__":
     fire.Fire(main)

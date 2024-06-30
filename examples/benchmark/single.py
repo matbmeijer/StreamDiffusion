@@ -1,7 +1,7 @@
 import io
 import os
 import sys
-from typing import List, Literal, Optional, Dict
+from typing import Dict, List, Literal, Optional
 
 import fire
 import PIL.Image
@@ -32,7 +32,7 @@ def run(
     width: int = 512,
     height: int = 512,
     warmup: int = 10,
-    acceleration: Literal["none", "xformers", "tensorrt"] = "xformers",
+    acceleration: Literal["none", "xformers", "tensorrt"] = "none",
     device_ids: Optional[List[int]] = None,
     use_denoising_batch: bool = True,
     seed: int = 2,
@@ -65,14 +65,14 @@ def run(
     warmup : int, optional
         The number of warmup steps to perform, by default 10.
     acceleration : Literal["none", "xformers", "tensorrt"], optional
-        The acceleration method, by default "tensorrt".
+        The acceleration method, by default "none".
     device_ids : Optional[List[int]], optional
         The device ids to use for DataParallel, by default None.
     use_denoising_batch : bool, optional
         Whether to use denoising batch or not, by default True.
     seed : int, optional
         The seed, by default 2. if -1, use random seed.
-    """       
+    """
     stream = StreamDiffusionWrapper(
         model_id_or_path=model_id_or_path,
         t_index_list=[32, 45],
@@ -101,9 +101,7 @@ def run(
         delta=0.5,
     )
 
-    downloaded_image = download_image("https://github.com/ddpn08.png").resize(
-        (width, height)
-    )
+    downloaded_image = download_image("https://github.com/ddpn08.png").resize((width, height))
 
     # warmup
     for _ in range(warmup):
@@ -112,8 +110,11 @@ def run(
 
     results = []
 
-    start = torch.cuda.Event(enable_timing=True)
-    end = torch.cuda.Event(enable_timing=True)
+    timer_event = getattr(
+        torch, "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
+    start = timer_event.Event(enable_timing=True)
+    end = timer_event.Event(enable_timing=True)
 
     for _ in tqdm(range(iterations)):
         start.record()
@@ -121,7 +122,7 @@ def run(
         stream(image=image_tensor)
         end.record()
 
-        torch.cuda.synchronize()
+        timer_event.synchronize()
         results.append(start.elapsed_time(end))
 
     print(f"Average time: {sum(results) / len(results)}ms")

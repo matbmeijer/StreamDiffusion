@@ -1,31 +1,31 @@
-from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
-from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi import Request
-
-import markdown2
-
 import logging
-import uuid
-import time
-from types import SimpleNamespace
-import asyncio
+import mimetypes
 import os
 import time
-import mimetypes
-import torch
+import uuid
+from types import SimpleNamespace
 
-from config import config, Args
-from util import pil_to_frame, bytes_to_pil
+import markdown2
+import torch
+from config import Args, config
 from connection_manager import ConnectionManager, ServerFullException
+from fastapi import FastAPI, HTTPException, Request, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from img2img import Pipeline
+from util import bytes_to_pil, pil_to_frame
+
 
 # fix mime error on windows
 mimetypes.add_type("application/javascript", ".js")
 
 THROTTLE = 1.0 / 120
 # logging.basicConfig(level=logging.DEBUG)
+
+
+def get_device():
+    return torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 
 
 class App:
@@ -48,9 +48,7 @@ class App:
         @self.app.websocket("/api/ws/{user_id}")
         async def websocket_endpoint(user_id: uuid.UUID, websocket: WebSocket):
             try:
-                await self.conn_manager.connect(
-                    user_id, websocket, self.args.max_queue_size
-                )
+                await self.conn_manager.connect(user_id, websocket, self.args.max_queue_size)
                 await handle_websocket_data(user_id)
             except ServerFullException as e:
                 logging.error(f"Server Full: {e}")
@@ -64,10 +62,7 @@ class App:
             last_time = time.time()
             try:
                 while True:
-                    if (
-                        self.args.timeout > 0
-                        and time.time() - last_time > self.args.timeout
-                    ):
+                    if self.args.timeout > 0 and time.time() - last_time > self.args.timeout:
                         await self.conn_manager.send_json(
                             user_id,
                             {
@@ -86,9 +81,7 @@ class App:
                         if info.input_mode == "image":
                             image_data = await self.conn_manager.receive_bytes(user_id)
                             if len(image_data) == 0:
-                                await self.conn_manager.send_json(
-                                    user_id, {"status": "send_frame"}
-                                )
+                                await self.conn_manager.send_json(user_id, {"status": "send_frame"})
                                 continue
                             params.image = bytes_to_pil(image_data)
                         await self.conn_manager.update_data(user_id, params)
@@ -109,9 +102,7 @@ class App:
                 async def generate():
                     while True:
                         last_time = time.time()
-                        await self.conn_manager.send_json(
-                            user_id, {"status": "send_frame"}
-                        )
+                        await self.conn_manager.send_json(user_id, {"status": "send_frame"})
                         params = await self.conn_manager.get_latest_data(user_id)
                         if params is None:
                             continue
@@ -153,14 +144,11 @@ class App:
         if not os.path.exists("public"):
             os.makedirs("public")
 
-        self.app.mount(
-            "/", StaticFiles(directory="./frontend/public", html=True), name="public"
-        )
+        self.app.mount("/", StaticFiles(directory="./frontend/public", html=True), name="public")
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch_dtype = torch.float16
-pipeline = Pipeline(config, device, torch_dtype)
+pipeline = Pipeline(config, get_device(), torch_dtype)
 app = App(config, pipeline).app
 
 if __name__ == "__main__":

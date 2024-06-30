@@ -1,5 +1,6 @@
 import gc
 import os
+import platform
 
 import torch
 from diffusers import AutoencoderKL, UNet2DConditionModel
@@ -18,6 +19,9 @@ class TorchVAEEncoder(torch.nn.Module):
     def __init__(self, vae: AutoencoderKL):
         super().__init__()
         self.vae = vae
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+        )
 
     def forward(self, x: torch.Tensor):
         return retrieve_latents(self.vae.encode(x))
@@ -32,7 +36,10 @@ def compile_vae_encoder(
     opt_batch_size: int = 1,
     engine_build_options: dict = {},
 ):
-    builder = EngineBuilder(model_data, vae, device=torch.device("cuda"))
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
+    builder = EngineBuilder(model_data, vae, device=device)
     builder.build(
         onnx_path,
         onnx_opt_path,
@@ -51,8 +58,11 @@ def compile_vae_decoder(
     opt_batch_size: int = 1,
     engine_build_options: dict = {},
 ):
-    vae = vae.to(torch.device("cuda"))
-    builder = EngineBuilder(model_data, vae, device=torch.device("cuda"))
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
+    vae = vae.to(device)
+    builder = EngineBuilder(model_data, vae, device=device)
     builder.build(
         onnx_path,
         onnx_opt_path,
@@ -71,8 +81,11 @@ def compile_unet(
     opt_batch_size: int = 1,
     engine_build_options: dict = {},
 ):
-    unet = unet.to(torch.device("cuda"), dtype=torch.float16)
-    builder = EngineBuilder(model_data, unet, device=torch.device("cuda"))
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
+    unet = unet.to(device, dtype=torch.float16)
+    builder = EngineBuilder(model_data, unet, device=device)
     builder.build(
         onnx_path,
         onnx_opt_path,
@@ -157,7 +170,7 @@ def accelerate_with_tensorrt(
         )
 
     if not os.path.exists(vae_encoder_engine_path):
-        vae_encoder = TorchVAEEncoder(vae).to(torch.device("cuda"))
+        vae_encoder = TorchVAEEncoder(vae).to("cuda")
         compile_vae_encoder(
             vae_encoder,
             vae_encoder_model,

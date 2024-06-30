@@ -189,12 +189,12 @@ import torch
 from diffusers import AutoencoderTiny, StableDiffusionPipeline
 from diffusers.utils import load_image
 
-from streamdiffusion import StreamDiffusion
+from streamdiffusion import StreamDiffusion, get_device
 from streamdiffusion.image_utils import postprocess_image
 
 # diffusers의 StableDiffusionPipeline을 사용하여 모든 모델을 로드할 수 있습니다
 pipe = StableDiffusionPipeline.from_pretrained("KBlueLeaf/kohaku-v2.1").to(
-    device=torch.device("cuda"),
+    device=get_device(),
     dtype=torch.float16,
 )
 
@@ -240,12 +240,12 @@ while True:
 import torch
 from diffusers import AutoencoderTiny, StableDiffusionPipeline
 
-from streamdiffusion import StreamDiffusion
+from streamdiffusion import StreamDiffusion, get_device
 from streamdiffusion.image_utils import postprocess_image
 
 # diffusers의 StableDiffusionPipeline을 사용하여 모든 모델을 로드할 수 있습니다
 pipe = StableDiffusionPipeline.from_pretrained("KBlueLeaf/kohaku-v2.1").to(
-    device=torch.device("cuda"),
+    device=get_device(),
     dtype=torch.float16,
 )
 

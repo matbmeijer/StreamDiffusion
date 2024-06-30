@@ -10,7 +10,6 @@ import uvicorn
 from config import Config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from pydantic import BaseModel
 
@@ -87,7 +86,7 @@ class Api:
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        self.app.mount("/", StaticFiles(directory="./frontend/dist", html=True), name="public")
+        # self.app.mount("/", StaticFiles(directory="./frontend/dist", html=True), name="public")
 
         self._predict_lock = asyncio.Lock()
         self._update_prompt_lock = asyncio.Lock()

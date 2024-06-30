@@ -19,6 +19,7 @@
 #
 
 import gc
+import platform
 from collections import OrderedDict
 from typing import *
 
@@ -42,6 +43,18 @@ from polygraphy.backend.trt import (
 from polygraphy.backend.trt import util as trt_util
 
 from .models import CLIP, VAE, BaseModel, UNet, VAEEncoder
+
+
+def get_device():
+    # Check if CUDA is available
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    # Check if MPS (Metal Performance Shaders) is available for Apple Silicon (M1, M2, etc.)
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available() and platform.system() == "Darwin":
+        return torch.device("mps")
+    # Fallback to CPU
+    else:
+        return torch.device("cpu")
 
 
 TRT_LOGGER = trt.Logger(trt.Logger.ERROR)
@@ -245,7 +258,7 @@ class Engine:
         else:
             self.context = self.engine.create_execution_context()
 
-    def allocate_buffers(self, shape_dict=None, device="cuda"):
+    def allocate_buffers(self, shape_dict=None, device=get_device()):
         for idx in range(trt_util.get_bindings_per_profile(self.engine)):
             binding = self.engine[idx]
             if shape_dict and binding in shape_dict:
@@ -411,7 +424,7 @@ def export_onnx(
     opt_batch_size: int,
     onnx_opset: int,
 ):
-    with torch.inference_mode(), torch.autocast("cuda"):
+    with torch.inference_mode(), torch.autocast(get_device()):
         inputs = model_data.get_sample_input(opt_batch_size, opt_image_height, opt_image_width)
         torch.onnx.export(
             model,

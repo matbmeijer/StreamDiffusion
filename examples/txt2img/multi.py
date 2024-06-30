@@ -1,28 +1,35 @@
 import os
 import sys
-from typing import Literal, Dict, Optional
+from typing import Dict, Literal, Optional
 
 import fire
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from utils.wrapper import StreamDiffusionWrapper
 
+
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def main(
-    output: str = os.path.join(CURRENT_DIR, "..", "..", "images", "outputs",),
+    output: str = os.path.join(
+        CURRENT_DIR,
+        "..",
+        "..",
+        "images",
+        "outputs",
+    ),
     model_id_or_path: str = "KBlueLeaf/kohaku-v2.1",
     lora_dict: Optional[Dict[str, float]] = None,
     prompt: str = "1girl with brown dog hair, thick glasses, smiling",
     width: int = 512,
     height: int = 512,
     frame_buffer_size: int = 3,
-    acceleration: Literal["none", "xformers", "tensorrt"] = "xformers",
+    acceleration: Literal["none", "xformers", "tensorrt"] = "none",
     seed: int = 2,
 ):
-    
     """
     Process for generating images based on a prompt using a specified model.
 

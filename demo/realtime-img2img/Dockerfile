@@ -67,4 +67,4 @@ RUN python -m streamdiffusion.tools.install-tensorrt
 
 
 USER user
-CMD ["python",  "main.py", "--debug", "--acceleration", "tensorrt"]
+CMD ["python",  "main.py", "--debug", "--acceleration", "none"]

@@ -21,7 +21,7 @@ class EngineBuilder:
         self,
         model: BaseModel,
         network: Any,
-        device=torch.device("cuda"),
+        device=torch.device("mps"),
     ):
         self.device = device
 

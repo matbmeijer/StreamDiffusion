@@ -1,6 +1,6 @@
-from typing import NamedTuple
 import argparse
 import os
+from typing import NamedTuple
 
 
 class Args(NamedTuple):
@@ -30,7 +30,7 @@ TIMEOUT = float(os.environ.get("TIMEOUT", 0))
 SAFETY_CHECKER = os.environ.get("SAFETY_CHECKER", None) == "True"
 USE_TAESD = os.environ.get("USE_TAESD", "True") == "True"
 ENGINE_DIR = os.environ.get("ENGINE_DIR", "engines")
-ACCELERATION = os.environ.get("ACCELERATION", "tensorrt")
+ACCELERATION = os.environ.get("ACCELERATION", "none")
 
 default_host = os.getenv("HOST", "0.0.0.0")
 default_port = int(os.getenv("PORT", "7860"))
@@ -40,9 +40,7 @@ parser = argparse.ArgumentParser(description="Run the app")
 parser.add_argument("--host", type=str, default=default_host, help="Host address")
 parser.add_argument("--port", type=int, default=default_port, help="Port number")
 parser.add_argument("--reload", action="store_true", help="Reload code on change")
-parser.add_argument(
-    "--mode", type=str, default=default_mode, help="App Inferece Mode: txt2img, img2img"
-)
+parser.add_argument("--mode", type=str, default=default_mode, help="App Inferece Mode: txt2img, img2img")
 parser.add_argument(
     "--max-queue-size",
     dest="max_queue_size",

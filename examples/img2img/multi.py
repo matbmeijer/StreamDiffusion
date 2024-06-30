@@ -1,7 +1,7 @@
 import glob
 import os
 import sys
-from typing import Literal, Dict, Optional
+from typing import Dict, Literal, Optional
 
 import fire
 
@@ -9,6 +9,7 @@ import fire
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from utils.wrapper import StreamDiffusionWrapper
+
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -22,7 +23,7 @@ def main(
     negative_prompt: str = "low quality, bad quality, blurry, low resolution",
     width: int = 512,
     height: int = 512,
-    acceleration: Literal["none", "xformers", "tensorrt"] = "xformers",
+    acceleration: Literal["none", "xformers", "tensorrt"] = "none",
     use_denoising_batch: bool = True,
     guidance_scale: float = 1.2,
     cfg_type: Literal["none", "full", "self", "initialize"] = "self",
@@ -53,7 +54,7 @@ def main(
     height : int, optional
         The height of the image, by default 512.
     acceleration : Literal["none", "xformers", "tensorrt"], optional
-        The acceleration method, by default "tensorrt".
+        The acceleration method, by default "none".
     use_denoising_batch : bool, optional
         Whether to use denoising batch or not, by default True.
     guidance_scale : float, optional
